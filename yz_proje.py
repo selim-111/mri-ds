@@ -125,7 +125,6 @@ from tensorflow.keras.applications import (
 NUM_CLASSES = 4
 INPUT_SHAPE = (224, 224, 3)
 
-# ✅ SADECE MODEL İÇİNDE KULLANILACAK
 data_augmentation_layers = tf.keras.Sequential([
     layers.RandomFlip("horizontal"),
     layers.RandomRotation(0.01),
@@ -138,7 +137,6 @@ def get_model_architecture(model_name, fine_tune_at=None):
 
     x = data_augmentation_layers(inputs)
 
-    # ======================================================
 
     if model_name == 'Selim_CNN':
 
@@ -214,7 +212,7 @@ def build_tuning_model(hp):
     x = layers.BatchNormalization()(x)
     x = layers.Activation('relu')(x)
     x = layers.MaxPooling2D((2, 2))(x)
-    # Parametre 1: Dropout Oranı (0.15 mi 0.25 mi?)
+    # Parametre 1: Dropout Oranı 
     hp_dropout1 = hp.Choice('dropout_1', values=[0.15, 0.25])
     x = layers.Dropout(hp_dropout1)(x)
 
@@ -234,7 +232,7 @@ def build_tuning_model(hp):
 
     x = layers.Flatten()(x)
 
-    # Parametre 2: Dense Katmanındaki Nöron Sayısı (256 mı 512 mi?)
+    # Parametre 2: Dense Katmanındaki Nöron Sayısı 
     hp_units = hp.Int('units', min_value=256, max_value=512, step=256)
     x = layers.Dense(hp_units)(x)
     x = layers.BatchNormalization()(x)
@@ -255,23 +253,20 @@ def build_tuning_model(hp):
     )
     return model
 
-# Tuner'ı Başlat (Hyperband Algoritması - Hızlıdır)
 tuner = kt.Hyperband(
     build_tuning_model,
     objective='val_accuracy',
-    max_epochs=5,     # Hızlı sonuç için az epoch
+    max_epochs=5,     
     factor=3,
     directory='my_dir',
     project_name='beyin_tumoru_optimizasyon'
 )
 
-# Aramayı Durduracak Erken Durdurma
 stop_early = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=2)
 
 print("🔍 Arama Başlıyor (Biraz sürebilir)...")
 
-# Küçük bir veri parçasıyla arama yap (Tüm veriyle yaparsak günlerce sürer)
-# Sadece ilk 500 resimle en iyi parametreyi bulalım, sonra asıl modelde kullanırız.
+
 X_tune = X_train_final[:500]
 y_tune = y_train_final[:500]
 X_val_tune = X_train_final[500:600]
@@ -279,11 +274,10 @@ y_val_tune = y_train_final[500:600]
 
 tuner.search(X_tune, y_tune, epochs=5, validation_data=(X_val_tune, y_val_tune), callbacks=[stop_early])
 
-# En İyi Parametreleri Al
 best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
 
 print("\n" + "="*50)
-print("✅ OPTİMİZASYON TAMAMLANDI! EN İYİ DEĞERLER:")
+print("OPTİMİZASYON TAMAMLANDI! EN İYİ DEĞERLER:")
 print(f"1. En İyi Dropout Oranı: {best_hps.get('dropout_1')}")
 print(f"2. En İyi Nöron Sayısı: {best_hps.get('units')}")
 print(f"3. En İyi Learning Rate: {best_hps.get('learning_rate')}")
@@ -304,13 +298,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import gc
 
-# ===============================
-# SABİT AYARLAR (L4 UYUMLU)
-# ===============================
 EPOCHS = 50
 FOLDS = 2
-BATCH_SIZE = 32          # L4 için ideal
-INIT_LR = 3e-4           # DÜŞÜRÜLDÜ (kritik)
+BATCH_SIZE = 32         
+INIT_LR = 3e-4
 INPUT_SHAPE = (224,224,3)
 NUM_CLASSES = 4
 
@@ -325,9 +316,7 @@ augmentation = tf.keras.Sequential([
     layers.RandomZoom(0.1)
 ])
 
-# ===============================
-# MODEL (DÜZELTİLDİ)
-# ===============================
+
 def build_selim_cnn():
     inputs = Input(shape=INPUT_SHAPE)
 
@@ -410,9 +399,7 @@ for train_idx, val_idx in kf.split(X_train_final):
     tf.keras.backend.clear_session()
     gc.collect()
 
-# ===============================
-# ÖZET
-# ===============================
+
 print("\n🏁 TRAINING TAMAMLANDI")
 for i, acc in enumerate(fold_scores, 1):
     print(f"Fold {i}: %{acc*100:.2f}")
@@ -430,7 +417,6 @@ COLOR_CONCAT    = "#F28E2B"  # Turuncu (Birleştirme)
 COLOR_TXT_W     = "#FFFFFF"  # Beyaz Yazı
 COLOR_TXT_B     = "#000000"  # Siyah Yazı
 
-# Sınıf Renkleri
 CLASS_COLORS = {
     'Pituitary': '#4D4D4D',
     'No Tumor': '#999999',
@@ -451,14 +437,13 @@ def draw_complete_hybrid_diagram():
     dot.node('Aug', 'Augmented\nImages', fillcolor=COLOR_AUG, fontcolor=COLOR_TXT_B)
     dot.edge('Input', 'Aug')
 
-    # --- 2. SOL KOL (MobileNetV2 - DOLU YAPI) ---
+    # --- 2. SOL KOL (MobileNetV2) ---
     with dot.subgraph(name='cluster_left') as c:
         c.attr(style='invis')
         # Model
         c.node('MobNet', 'MobileNetV2', fillcolor=COLOR_MODEL, fontcolor=COLOR_TXT_W)
         # GAP
         c.node('GAP1', 'GlobalAveragePooling2D', fillcolor=COLOR_LAYER, fontcolor=COLOR_TXT_W)
-        # Ara Katmanlar (Senin Değerlerinle Dolduruldu)
         c.node('L_Dense1', 'Dense\n256', fillcolor=COLOR_LAYER, fontcolor=COLOR_TXT_W)
         c.node('L_Drop1', 'Dropout\n0.5', fillcolor=COLOR_LAYER, fontcolor=COLOR_TXT_W)
         c.node('L_Dense2', 'Dense\n128', fillcolor=COLOR_LAYER, fontcolor=COLOR_TXT_W)
@@ -480,7 +465,6 @@ def draw_complete_hybrid_diagram():
         c.node('DenseNet', 'DenseNet121', fillcolor=COLOR_MODEL, fontcolor=COLOR_TXT_W)
         # GAP
         c.node('GAP2', 'GlobalAveragePooling2D', fillcolor=COLOR_LAYER, fontcolor=COLOR_TXT_W)
-        # Ara Katmanlar (Senin Değerlerinle Dolduruldu)
         c.node('R_Dense1', 'Dense\n256', fillcolor=COLOR_LAYER, fontcolor=COLOR_TXT_W)
         c.node('R_Drop1', 'Dropout\n0.5', fillcolor=COLOR_LAYER, fontcolor=COLOR_TXT_W)
         c.node('R_Dense2', 'Dense\n128', fillcolor=COLOR_LAYER, fontcolor=COLOR_TXT_W)
@@ -499,14 +483,13 @@ def draw_complete_hybrid_diagram():
     dot.edge('Aug', 'MobNet')
     dot.edge('Aug', 'DenseNet')
 
-    # --- 4. BİRLEŞTİRME (CONCATENATE) ---
+    # --- 4. BİRLEŞTİRME ---
     dot.node('Concat', 'Concatenate', fillcolor=COLOR_CONCAT, fontcolor=COLOR_TXT_W)
     dot.edge('L_DenseOut', 'Concat')
     dot.edge('R_DenseOut', 'Concat')
 
-    # --- 5. FİNAL KUYRUK (SENİN DEĞERLERİN) ---
+    # --- 5. FİNAL KUYRUK  ---
     # Sıra: Dense(256) -> Dropout(0.5) -> Dense(128) -> Dropout(0.5) -> Softmax
-    # Referans resimdeki uzun kuyruğu senin değerlerinle yapıyoruz.
 
     dot.node('F_Dense1', 'Dense\n256', fillcolor=COLOR_MODEL, fontcolor=COLOR_TXT_W) # Resimde alt kısım Mavi
     dot.node('F_Drop1', 'Dropout\n0.5', fillcolor=COLOR_MODEL, fontcolor=COLOR_TXT_W)
@@ -728,7 +711,6 @@ def draw_exact_reference_flowchart():
     dot.edge('Separate', 'TestDB')
 
     # 4. MODELLER VE EĞİTİM (Gri Liste Kutusu)
-    # Referans resimdeki "Machine and Deep Learning Methods" kutusu
     model_list_html = '''<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5">
       <TR><TD ALIGN="LEFT"><B>Deep Learning Models</B></TD></TR>
       <TR><TD ALIGN="LEFT" BGCOLOR="#E0E0E0">1. My Custom CNN</TD></TR>
