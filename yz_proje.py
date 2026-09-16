@@ -7,7 +7,6 @@ from pathlib import Path
 from google.colab import drive
 import shutil
 
-# 1. Drive ve Yol Ayarları
 if not os.path.exists('/content/drive'):
     drive.mount('/content/drive')
 
